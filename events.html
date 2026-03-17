@@ -70,20 +70,42 @@ function createEventCard(event){
     `
 }
 
-// Parse Markdown file to extract events
+function convertTZ(date, tzString) {
+    return new Date(date.toLocaleString('sv', { timeZone: tzString }));
+}
+
 async function loadEventsFromMarkdown(){
     try {
         const response = await fetch('events-data.md')
         const markdown = await response.text()
         const events = parseMarkdownEvents(markdown)
+        const now = convertTZ(new Date(), 'Asia/Kolkata');
+        console.log("Current date:", now)
         const upcomingContainer = document.getElementById("upcoming-events")
         const pastContainer = document.getElementById("past-events")
+        let upcomingEvent = []
+        let pastEvent = []
         events.forEach(event => {
-            if(event.type === "upcoming"){
-                upcomingContainer.innerHTML += createEventCard(event)
-            }else{
-                pastContainer.innerHTML += createEventCard(event)
+            const eventDate = new Date(event.date)
+            eventDate.setHours(0, 0, 0, 0)
+
+            if (!isNaN(eventDate)) {
+                if (eventDate >= now) {
+                    upcomingEvent.push(event)
+                } else {
+                    pastEvent.push(event)
+                }
+            } else {
+                pastEvent.push(event)
             }
+        })
+        upcomingEvent.sort((a, b) => new Date(a.date) - new Date(b.date))
+        pastEvent.sort((a, b) => new Date(b.date) - new Date(a.date))
+        upcomingEvent.forEach(event => {
+            upcomingContainer.innerHTML += createEventCard(event)
+        })
+        pastEvent.forEach(event => {
+            pastContainer.innerHTML += createEventCard(event)
         })
     } catch(error) {
         console.error("Error loading events:", error)
@@ -93,20 +115,14 @@ async function loadEventsFromMarkdown(){
 function parseMarkdownEvents(markdown){
     const events = []
     let currentEvent = null
-    let currentSection = ""
     const lines = markdown.split('\n')
     for(let i = 0; i < lines.length; i++){
         const line = lines[i]
-        if(line.startsWith('## Upcoming Events')){
-            currentSection = "upcoming"
-        }else if(line.startsWith('## Past Events')){
-            currentSection = "past"
-        }else if(line.startsWith('### ')){
+        if(line.startsWith('### ')){
             if(currentEvent){
                 events.push(currentEvent)
             }
             currentEvent = {
-                type: currentSection,
                 title: line.replace('### ', ''),
                 tags: [],
                 speakers: [],

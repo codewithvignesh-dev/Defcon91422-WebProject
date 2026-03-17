@@ -1,10 +1,8 @@
 # DEFCON Events
 
-## Upcoming Events
-
 ### DEFCON Coimbatore CTF Competition (CTF@DCG91422)
 
-**Date:** 17 April 2026
+**Date:** 17 March 2026
 
 **Title:** DEFCON Coimbatore CTF Competition (CTF@DCG91422)
 
@@ -46,8 +44,6 @@
 - Industry Leaders — Strategic Panel Discussions & Industry Insights
 
 ---
-
-## Past Events
 
 ### OWASP Cyber Security Workshop
 
