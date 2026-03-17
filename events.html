@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DEFCON Events</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="particles-js"></div>
+<nav class="navbar" id="navbar">
+    <div class="nav-container">
+        <div class="logo">
+            <span class="glitch" data-text="DEFCON">DEFCON</span>
+            <span class="highlight">CTF</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index" class="nav-link">Home</a></li>
+            <li><a href="events" class="nav-link">Events</a></li>
+        </ul>
+    </div>
+</nav>
+<section class="events-hero">
+    <h1 class="glitch" data-text="EVENTS">EVENTS</h1>
+    <p>Explore DEFCON Coimbatore cybersecurity competitions, conferences, workshops and community meetups.</p>
+</section>
+<section class="events-section">
+    <h3 class="section-label">UPCOMING EVENTS</h3>
+    <div class="events-grid" id="upcoming-events"></div>
+</section>
+<section class="events-section">
+    <h3 class="section-label">PAST EVENTS</h3>
+    <div class="events-grid" id="past-events"></div>
+</section>
+<script>
+function createEventCard(event){
+    let speakersHTML = ""
+    let linksHTML = ""
+    if(event.speakers && event.speakers.length){
+        speakersHTML = "<div class='event-speakers'><b>Speakers:</b><ul>"
+        event.speakers.forEach(s => {
+            speakersHTML += "<li>"+s+"</li>"
+        })
+        speakersHTML += "</ul></div>"
+    }
+    if(event.prizes && event.prizes.length){
+        speakersHTML += "<div class='event-speakers'><b>Prizes:</b><ul>"
+        event.prizes.forEach(p => {
+            speakersHTML += "<li>"+p+"</li>"
+        })
+        speakersHTML += "</ul></div>"
+    }
+    if(event.links && Object.keys(event.links).length > 0){
+        for(const key in event.links){
+            linksHTML += "<a href='"+event.links[key]+"' target='_blank'>"+key+"</a>"
+        }
+    }
+    return `
+    <div class="event-card">
+    <div class="event-date">${event.date}</div>
+    <div class="event-title">${event.title}</div>
+    <div class="event-tags">${event.tags.join(" • ")}</div>
+    <div class="event-location">${event.location}</div>
+    <div class="event-status">${event.status}</div>
+    <div class="event-desc">${event.description}</div>
+    ${speakersHTML}
+    <div class="event-links">${linksHTML}</div>
+    </div>
+    `
+}
+
+// Parse Markdown file to extract events
+async function loadEventsFromMarkdown(){
+    try {
+        const response = await fetch('events-data.md')
+        const markdown = await response.text()
+        const events = parseMarkdownEvents(markdown)
+        const upcomingContainer = document.getElementById("upcoming-events")
+        const pastContainer = document.getElementById("past-events")
+        events.forEach(event => {
+            if(event.type === "upcoming"){
+                upcomingContainer.innerHTML += createEventCard(event)
+            }else{
+                pastContainer.innerHTML += createEventCard(event)
+            }
+        })
+    } catch(error) {
+        console.error("Error loading events:", error)
+    }
+}
+
+function parseMarkdownEvents(markdown){
+    const events = []
+    let currentEvent = null
+    let currentSection = ""
+    const lines = markdown.split('\n')
+    for(let i = 0; i < lines.length; i++){
+        const line = lines[i]
+        if(line.startsWith('## Upcoming Events')){
+            currentSection = "upcoming"
+        }else if(line.startsWith('## Past Events')){
+            currentSection = "past"
+        }else if(line.startsWith('### ')){
+            if(currentEvent){
+                events.push(currentEvent)
+            }
+            currentEvent = {
+                type: currentSection,
+                title: line.replace('### ', ''),
+                tags: [],
+                speakers: [],
+                prizes: [],
+                links: {}
+            }
+        }else if(line.startsWith('**Date:**')){
+            currentEvent.date = line.replace('**Date:** ', '')
+        }else if(line.startsWith('**Tags:**')){
+            currentEvent.tags = line.replace('**Tags:** ', '').split(', ')
+        }else if(line.startsWith('**Location:**')){
+            currentEvent.location = line.replace('**Location:** ', '')
+        }else if(line.startsWith('**Status:**')){
+            currentEvent.status = line.replace('**Status:** ', '')
+        }else if(line.startsWith('**Description:**')){
+            currentEvent.description = line.replace('**Description:** ', '')
+        }else if(line.startsWith('**Speakers:**')){
+            i++
+            while(i < lines.length && lines[i].startsWith('- ')){
+                currentEvent.speakers.push(lines[i].replace('- ', ''))
+                i++
+            }
+            i--
+        }else if(line.startsWith('**Prizes:**')){
+            i++
+            while(i < lines.length && lines[i].startsWith('- ')){
+                currentEvent.prizes.push(lines[i].replace('- ', ''))
+                i++
+            }
+            i--
+        }else if(line.startsWith('**Links:**')){
+            i++
+            while(i < lines.length && lines[i].startsWith('- [')){
+                const linkMatch = lines[i].match(/\[(.+?)\]\((.+?)\)/)
+                if(linkMatch){
+                    currentEvent.links[linkMatch[1]] = linkMatch[2]
+                }
+                i++
+            }
+            i--
+        }
+    }
+
+    if(currentEvent){
+        events.push(currentEvent)
+    }
+    return events
+}
+
+loadEventsFromMarkdown()
+
+</script>
+<script src="script.js"></script>
+</body>
+</html>
